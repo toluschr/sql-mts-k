@@ -12,9 +12,9 @@ pip install -r requirements.txt
 
 ### Table: Stations
 
-| *id* | name        | brand      | street     | place | lat | lng | dist                      | houseNumber | postCode |
-|------|-------------|------------|------------|-------|-----|-----|---------------------------|-------------|----------|
-| ID   | Unique Name | Shell|ARAL | Musterstr. | Stadt | 0.0 | 0.0 | km from lat lng in config | 1           | 12345    |
+| *id* | name        | brand          | street | place | lat | lng | dist                       | houseNumber | postCode |
+|------|-------------|----------------|--------|-------|-----|-----|----------------------------|-------------|----------|
+| ID   | Unique Name | Shell/ARAL/... | Str.   | Stadt | 0.0 | 0.0 | **km** / lat lng in config | 1           | 12345    |
 
 ### Table: Status
 
