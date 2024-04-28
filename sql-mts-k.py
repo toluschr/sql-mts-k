@@ -86,10 +86,10 @@ class SqlStatus():
 
 @dataclasses.dataclass
 class SqlMtsKConfig():
-    tries: int
-    timeout: int
-    interval: int
-    database_path: str
+    tries: int = 3
+    timeout: int = 10
+    interval: int = 360
+    database_path: str = "/etc/sql-mts-k.db"
 
 
 @dataclasses.dataclass
@@ -203,8 +203,7 @@ class TankerkoenigListResponse():
 CONFIG_PATH = "/etc/sql-mts-k.toml"
 
 tankerkoenig_params: dict[str, typing.Any]
-sql_mts_k = SqlMtsKConfig(tries=3, timeout=10, interval=360,
-                          database_path="/etc/sql_mts_k.db")
+sql_mts_k= SqlMtsKConfig()
 con: sqlite3.Connection
 cur: sqlite3.Cursor
 
