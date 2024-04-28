@@ -1,5 +1,7 @@
 # sql-mts-k
 
+Konzipiert für die Auswertung mit Grafana
+
 ## Dependencies
 
 ```
