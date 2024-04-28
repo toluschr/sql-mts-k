@@ -1,0 +1,14 @@
+[sql_mts_k]
+tries = 3
+timeout = 10
+interval = 360
+database_path = "/etc/sql-mts-k.db"
+
+[tankerkoenig]
+# Request your api-key here: https://creativecommons.tankerkoenig.de/
+apikey = '00000000-0000-0000-0000-000000000002'
+type = 'e5'
+lat = 0
+lng = 0
+rad = 25
+sort = 'price'
