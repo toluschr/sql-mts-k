@@ -1,0 +1,4 @@
+dacite==1.8.1
+Requests==2.31.0
+schedule==1.2.1
+toml==0.10.2
