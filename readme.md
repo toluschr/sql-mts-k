@@ -32,12 +32,9 @@ pip install -r requirements.txt
 
 Günstigste Tankstelle im Umkreis unter Betrachtung der Fahrtkosten zur Tankstelle:
 ```
-SELECT name, price, price*60 + (price*2*dist*8)/100 as total
-FROM (
-    SELECT * FROM prices
-    INNER JOIN stations
-    ON stations.id == prices.stationId
-    ORDER BY timestamp DESC
-)
-GROUP BY name ORDER BY total;
+SELECT MAX(timestamp) as timestamp, name, price, price*60 + (price*2*dist*8)/100 as total FROM prices
+INNER JOIN stations
+ON stations.id == prices.stationId
+GROUP BY name
+ORDER BY total
 ```
