@@ -13,21 +13,6 @@ import schedule
 import dataclasses
 
 
-CONFIG_LOCATION = "/etc/sql-mts-k.toml"
-DATABASE_LOCATION = "/etc/sql-mts-k.db"
-
-# "Home-Automation-, Smart-Mirror- und ähnliche Systeme sollten Abfragen nicht öfter als einmal in 5 Minuten durchführen"
-# ==> SCHEDULE > 5 min + (TRIES * RETRY_TIMEOUT)
-SCHEDULE = schedule.every(6).minutes
-TRIES = 3
-RETRY_TIMEOUT = 10
-
-
-config: 'Config'
-con: sqlite3.Connection
-cur: sqlite3.Cursor
-
-
 def info(message):
     if sys.stdout.isatty():
         print(f"\033[1m[\033[32minfo\033[0;1m]\033[0m {message}",
@@ -100,13 +85,27 @@ class SqlStatus():
 
 
 @dataclasses.dataclass
-class Config():
+class SqlMtsKConfig():
+    tries: int
+    timeout: int
+    interval: int
+    database_path: str
+
+
+@dataclasses.dataclass
+class TankerkoenigConfig():
     apikey: str
     type: str
     lat: float
     lng: float
     rad: int
     sort: str
+
+
+@dataclasses.dataclass
+class Config():
+    sql_mts_k: typing.Optional[SqlMtsKConfig]
+    tankerkoenig: TankerkoenigConfig
 
     @staticmethod
     def from_file(filepath: pathlib.Path | str) -> 'Config':
@@ -201,21 +200,29 @@ class TankerkoenigListResponse():
                                      or_ignore=True)
 
 
+CONFIG_PATH = "/etc/sql-mts-k.toml"
+
+tankerkoenig_params: dict[str, typing.Any]
+sql_mts_k = SqlMtsKConfig(tries=3, timeout=10, interval=360,
+                          database_path="/etc/sql_mts_k.db")
+con: sqlite3.Connection
+cur: sqlite3.Cursor
+
+
 def fetch_current_prices():
-    global config, con, cur
+    global sql_mts_k, tankernoenig_params, con, cur
 
     url = "https://creativecommons.tankerkoenig.de/json/list.php"
-    params = dataclasses.asdict(config)
 
-    for i in range(0, TRIES):
-        response = requests.get(url=url, params=params)
+    for i in range(0, sql_mts_k.tries):
+        response = requests.get(url=url, params=tankerkoenig_params)
         if response.status_code == 200:
             break
 
-        error_message(f"Retrying {i+1}/{TRIES}")
-        time.sleep(RETRY_TIMEOUT)
+        error_message(f"Retrying {i+1}/{sql_mts_k.tries}")
+        time.sleep(sql_mts_k.timeout)
     else:
-        error_message(f"Unable to fetch data after {TRIES} tries")
+        error_message(f"Unable to fetch after {sql_mts_k.tries} tries")
         return
 
     data = dacite.from_dict(data_class=TankerkoenigListResponse,
@@ -231,11 +238,26 @@ def fetch_current_prices():
 
 
 try:
-    config = Config.from_file(CONFIG_LOCATION)
+    config = Config.from_file(CONFIG_PATH)
+
+    if config.sql_mts_k is not None:
+        sql_mts_k = config.sql_mts_k
+
+    tankerkoenig_params = dataclasses.asdict(config.tankerkoenig)
+
+    # "Home-Automation-, Smart-Mirror- und ähnliche Systeme sollten Abfragen
+    # nicht öfter als einmal in 5 Minuten durchführen"
+    #
+    # If every retry fails, it takes roughly (TRIES * RETRY_TIMEOUT) seconds.
+    # Since the task took a long time to complete, schedule will then
+    # reschedule it earlier.
+    if sql_mts_k.interval < (5*60) + (sql_mts_k.tries * sql_mts_k.timeout):
+        raise Exception("`interval-tries*timeout` must be greater than 5 min")
+
 except Exception as e:
     error(f"Unable to load config: {str(e)}")
 
-con = sqlite3.connect(DATABASE_LOCATION)
+con = sqlite3.connect(sql_mts_k.database_path)
 cur = con.cursor()
 
 sqlite3_create_table_for_dataclass(cur,
@@ -254,7 +276,9 @@ sqlite3_create_table_for_dataclass(cur,
                                    primary_key=('stationId'),
                                    if_not_exists=True)
 
-SCHEDULE.do(fetch_current_prices)
+schedule.every(sql_mts_k.interval).seconds.do(fetch_current_prices)
+
+info("Initialization successful")
 
 while True:
     seconds_until_next_run = schedule.idle_seconds()
