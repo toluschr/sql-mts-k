@@ -95,7 +95,7 @@ class SqlMtsKConfig():
 @dataclasses.dataclass
 class TankerkoenigConfig():
     apikey: str
-    type: str
+    type: typing.Literal['e5'] | typing.Literal['e10'] | typing.Literal['diesel']
     lat: float
     lng: float
     rad: int
